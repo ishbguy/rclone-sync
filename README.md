@@ -7,7 +7,10 @@
 [licsvg]: https://img.shields.io/badge/license-MIT-green.svg
 [lic]: https://github.com/ishbguy/rclone-sync/blob/master/LICENSE
 
-A bidirectional sync tool using rclone and implemented in shell.
+A bidirectional sync tool using rclone and implemented in shell. The sync
+algorithms reference from
+[cjnaz/rclonesync-V2](https://github.com/cjnaz/rclonesync-V2). which is a good
+choice for a Python version.
 
 ## Table of Contents
 
