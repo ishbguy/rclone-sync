@@ -34,7 +34,12 @@ A bidirectional sync tool using rclone and implemented in shell.
 
 ```
 $ git clone https://github.com/ishbguy/rclone-sync
-$ export PATH="$PATH:$(pwd)/rclone-sync"
+$ export PATH="$PATH:$(pwd)/bin"
+```
+or
+```
+$ curl -fLo /path/to/rclone-sync.sh \
+        https://raw.githubusercontent.com/ishbguy/rclone-sync/master/bin/rclone-sync.sh
 ```
 
 ## :memo: Configuration
