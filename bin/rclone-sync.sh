@@ -67,6 +67,7 @@ rclone_do() {
     echo -e "$@"
     [[ -z $dry_run ]] && { "$@" || warn "Failed to do: $*"; } 
 }
+rclone_abs() { echo "$(($1 > 0? $1: -($1)))"; }
 rclone_is_exist_dir() { rclone lsf "$1" &>/dev/null; }
 rclone_is_empty_dir() { local out="$(rclone lsf "$1" 2>/dev/null)"; [[ -z $out ]]; }
 rclone_first_sync() {
@@ -173,6 +174,7 @@ EOF
     local info_dir="${RCLONE_SYNC_RC_DIR:-$HOME/.$PRONAME}"
     local path1_info="$info_dir/${path1//+(:|\/)/_}-${path2//+(:|\/)/_}-PATH1.info"
     local path2_info="$info_dir/${path1//+(:|\/)/_}-${path2//+(:|\/)/_}-PATH2.info"
+    local max_diff=${RCLONE_SYNC_MAX_DIFF:-50}
 
     local -A path1_files_prev path1_files_curr
     local -A path2_files_prev path2_files_curr
@@ -198,6 +200,9 @@ EOF
     rclone_read_file_info path2_files_prev "$path2_info"
     rclone_read_file_info path1_files_curr <(rclone_get_file_info "$path1")
     rclone_read_file_info path2_files_curr <(rclone_get_file_info "$path2")
+
+    [[ $(rclone_abs $((${#path1_files_curr[@]} - ${#path2_files_curr[@]}))) -lt $max_diff ]] \
+        || die "Over $max_diff files different, please check by yourself!"
 
     # path curr and prev cmp
     rclone_set_diff path1_files_prev path1_files_curr path1_delta_del
