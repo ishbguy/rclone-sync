@@ -1,9 +1,7 @@
 # [rclone-sync](https://github.com/ishbguy/rclone-sync)
 
-[![Version][versvg]][ver] [![License][licsvg]][lic]
+[![License][licsvg]][lic]
 
-[versvg]: https://img.shields.io/badge/version-v0.1.0-lightgrey.svg
-[ver]: https://img.shields.io/badge/version-v0.1.0-lightgrey.svg
 [licsvg]: https://img.shields.io/badge/license-MIT-green.svg
 [lic]: https://github.com/ishbguy/rclone-sync/blob/master/LICENSE
 
