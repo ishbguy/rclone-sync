@@ -90,7 +90,18 @@ rclone_first_sync() {
 }
 rclone_get_file_info() {
     local path="$1"
+    local file="$2"
+    if [[ -n $file ]]; then
+        exec 3>&1
+        exec 1>$file
+        # this will trigger bad file descriptor error
+        # trap 'exec 1>&3; exec 3>&-' RETURN
+    fi
     rclone lsf --format tp --csv --files-only -R "$path" | sort -t, -k2
+    if [[ -n $file ]]; then
+        exec 1>&3
+        exec 3>&-
+    fi
 }
 rclone_read_file_info() {
     local -n files="$1"
@@ -141,6 +152,14 @@ rclone_sync_path() {
         rclone_do rclone deletefile "$p1/$file" && ((++sync_ok)) || ((++sync_fail))
     done
 }
+rclone_try() {
+    local times=$1; shift
+    for ((n = 0; n < times; n++)); do
+        echo "Try $n time: $*"
+        "$@" && { echo "Succeed."; return 0; } || echo "Failed!"
+    done
+    return 1
+}
 
 rclone_sync() {
     local PRONAME="$(basename "${BASH_SOURCE[0]}")"
@@ -175,6 +194,7 @@ EOF
     local path1_info="$info_dir/${path1//+(:|\/)/_}-${path2//+(:|\/)/_}-PATH1.info"
     local path2_info="$info_dir/${path1//+(:|\/)/_}-${path2//+(:|\/)/_}-PATH2.info"
     local max_diff=${RCLONE_SYNC_MAX_DIFF:-50}
+    local try_time=${RCLONE_SYNC_TRY_TIME:-5}
 
     local -A path1_files_prev path1_files_curr
     local -A path2_files_prev path2_files_curr
@@ -190,16 +210,22 @@ EOF
     if [[ ! -e $path1_info || ! -e $path2_info ]]; then
         warn "info file is not found, sync $path1 and $path2 for first time..."
         rclone_first_sync "$path1" "$path2" \
-            && rclone_get_file_info "$path1" >"$path1_info" \
-            && rclone_get_file_info "$path2" >"$path2_info" \
+            && rclone_try "$try_time" rclone_get_file_info "$path1" "$path1_info" \
+            && rclone_try "$try_time" rclone_get_file_info "$path2" "$path2_info" \
             || { rm -rf "$path1_info" "$path2_info"; return 1; }
         return 0
     fi
 
+    local path1_info_curr=$(mktemp)
+    local path2_info_curr=$(mktemp)
+    trap 'rm -rf $path1_info_curr $path2_info_curr' SIGINT EXIT RETURN
+    rclone_try "$try_time" rclone_get_file_info "$path1" "$path1_info_curr" || die "Can not get info files."
+    rclone_try "$try_time" rclone_get_file_info "$path2" "$path2_info_curr" || die "Can not get info files."
+
     rclone_read_file_info path1_files_prev "$path1_info"
     rclone_read_file_info path2_files_prev "$path2_info"
-    rclone_read_file_info path1_files_curr <(rclone_get_file_info "$path1")
-    rclone_read_file_info path2_files_curr <(rclone_get_file_info "$path2")
+    rclone_read_file_info path1_files_curr "$path1_info_curr"
+    rclone_read_file_info path2_files_curr "$path2_info_curr"
 
     [[ $(rclone_abs $((${#path1_files_curr[@]} - ${#path2_files_curr[@]}))) -lt $max_diff ]] \
         || die "Over $max_diff files different, please check by yourself!"
@@ -296,8 +322,9 @@ EOF
     # update info files
     if [[ $sync_ok -gt 0 ]]; then
         echo "Update info files..."
-        rclone_get_file_info "$path1" >"$path1_info" \
-            && rclone_get_file_info "$path2" >"$path2_info" \
+        rclone_try "$try_time" rclone_get_file_info "$path1" "$path1_info_curr" \
+            && rclone_try "$try_time" rclone_get_file_info "$path2" "$path2_info_curr" \
+            && cp "$path1_info_curr" "$path1_info" && cp "$path2_info_curr" "$path2_info" \
             || warn "Fail to update info files!"
     fi
 
