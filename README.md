@@ -35,12 +35,14 @@ choice for a Python version.
 
 ```
 $ git clone https://github.com/ishbguy/rclone-sync
+$ cd rclone-sync
 $ export PATH="$PATH:$(pwd)/bin"
 ```
 or
 ```
 $ curl -fLo /path/to/rclone-sync.sh \
         https://raw.githubusercontent.com/ishbguy/rclone-sync/master/bin/rclone-sync.sh
+$ export PATH="$PATH:/path/to"
 ```
 
 ## :memo: Configuration
