@@ -49,7 +49,7 @@ pargs() {
     done
     shift $((OPTIND - 1))
 }
-chkobj() {
+require() {
     ensure "[[ $# -gt 2 ]]" "Not enough args."
     ensure "definedf $1" "$1 should be a defined func."
 
@@ -62,9 +62,9 @@ chkobj() {
     done
     [[ ${#miss[@]} -eq 0 ]] || die "$msg: ${miss[*]}."
 }
-chkvar() { chkobj defined "You need to define vars" "$@"; }
-chkfunc() { chkobj definedf "You need to define funcs" "$@"; }
-chktool() { chkobj has_tool "You need to install tools" "$@"; }
+require_var() { require defined "You need to define vars" "$@"; }
+require_func() { require definedf "You need to define funcs" "$@"; }
+require_tool() { require has_tool "You need to install tools" "$@"; }
 
 # app funcs
 rclone_do() {
@@ -286,7 +286,7 @@ EOF
     shopt -s extglob
 
     ensure "[[ $# -eq 2 && -n '$1' && -n '$2' ]]" "Need path1 and path2!\\n\\n$HELP"
-    chktool rclone
+    require_tool rclone
 
     local path1="${1%%/}"
     local path2="${2%%/}"
