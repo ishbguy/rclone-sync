@@ -237,6 +237,15 @@ rclone_path_cmp() {
     rclone_check_path_diff "$1" "$2"
     rclone_check_path_inter "$1" "$2"
 }
+rclone_show_delta() {
+    echo ==================================================
+    eval echo "DELTA in \$$1"
+    eval echo "add: \${!$1_$2_delta_add[*]}"
+    eval echo "del: \${!$1_$2_delta_del[*]}"
+    eval echo "new: \${!$1_$2_delta_new[*]}"
+    eval echo "old: \${!$1_$2_delta_old[*]}"
+    echo ==================================================
+}
 rclone_try() {
     local times=$1; shift
     for ((n = 0; n < times; n++)); do
@@ -324,19 +333,8 @@ EOF
     # path1 and path2 curr cmp
     rclone_path_cmp path1 path2
 
-    echo ====================
-    echo "DELTA in $path1"
-    echo "add: ${!path1_path2_delta_add[*]}"
-    echo "del: ${!path1_path2_delta_del[*]}"
-    echo "new: ${!path1_path2_delta_new[*]}"
-    echo "old: ${!path1_path2_delta_old[*]}"
-    echo ====================
-    echo "DELTA in $path2"
-    echo "add: ${!path2_path1_delta_add[*]}"
-    echo "del: ${!path2_path1_delta_del[*]}"
-    echo "new: ${!path2_path1_delta_new[*]}"
-    echo "old: ${!path2_path1_delta_old[*]}"
-    echo ====================
+    rclone_show_delta path1 path2
+    rclone_show_delta path2 path1
 
     echo "### Sync $path1 to $path2..."
     rclone_sync_path path1 path2
