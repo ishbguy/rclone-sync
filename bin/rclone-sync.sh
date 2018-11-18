@@ -153,36 +153,40 @@ rclone_sync_path() {
         rclone_do rclone deletefile "$p1/$file" && ((++sync_ok)) || ((++sync_fail))
     done
 }
+rclone_check_path_inter() {
+    local -n prev="$1_files_prev"
+    local -n curr="$1_files_curr"
+    local -n inter="$1_inter"
+    local -n del="$1_delta_del"
+    local -n add="$1_delta_add"
+    local -n new="$1_delta_new"
+    local -n old="$1_delta_old"
+    local -n uch="$1_delta_uch"
+    
+    for file in "${!inter[@]}"; do
+        local diff="$(date_cmp "${curr[$file]}" "${prev[$file]}")"
+        if [[ $diff -gt 0 ]]; then
+            new[$file]=1
+        elif [[ $diff -lt 0 ]]; then
+            old[$file]=1
+        else
+            uch[$file]=1
+        fi
+    done
+}
 rclone_check_path() {
     local prev="$1_files_prev"
     local curr="$1_files_curr"
     local inter="$1_inter"
     local del="$1_delta_del"
     local add="$1_delta_add"
-    local -n prev_ref="$prev"
-    local -n curr_ref="$curr"
-    local -n inter_ref="$inter"
-    local -n del_ref="$del"
-    local -n add_ref="$add"
-    local -n new_ref="$1_delta_new"
-    local -n old_ref="$1_delta_old"
-    local -n uch_ref="$1_delta_uch"
 
     rclone_set_diff "$prev" "$curr" "$del"
     rclone_set_diff "$curr" "$prev" "$add"
     rclone_set_inter "$curr" "$prev" "$inter"
-    for file in "${!inter_ref[@]}"; do
-        local diff="$(date_cmp "${curr_ref[$file]}" "${prev_ref[$file]}")"
-        if [[ $diff -gt 0 ]]; then
-            new_ref[$file]=1
-        elif [[ $diff -lt 0 ]]; then
-            old_ref[$file]=1
-        else
-            uch_ref[$file]=1
-        fi
-    done
+    rclone_check_path_inter "$1"
 }
-rclone_check_path_diff() {
+rclone_path_cmp_diff() {
     local -n p1p2_diff="$1_$2_diff"
     local -n p1p2_add="$1_$2_delta_add"
     local -n p1p2_del="$1_$2_delta_del"
@@ -199,7 +203,7 @@ rclone_check_path_diff() {
     done
 
 }
-rclone_check_path_inter() {
+rclone_path_cmp_inter() {
     local -n p1="$1_files_curr"
     local -n p2="$2_files_curr"
     local -n p1p2_inter="$1_$2_inter"
@@ -234,8 +238,8 @@ rclone_path_cmp() {
     rclone_set_inter "$p1" "$p2" "$p1p2_inter"
     rclone_set_diff "$p1" "$p2" "$p1p2_diff"
     rclone_set_diff "$p2" "$p1" "$p2p1_diff"
-    rclone_check_path_diff "$1" "$2"
-    rclone_check_path_inter "$1" "$2"
+    rclone_path_cmp_diff "$1" "$2"
+    rclone_path_cmp_inter "$1" "$2"
 }
 rclone_show_delta() {
     echo ==================================================
