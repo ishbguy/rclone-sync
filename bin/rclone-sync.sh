@@ -27,6 +27,10 @@ ensure() {
         "${FUNCNAME[0]} '$cmd' failed." "$@"
 }
 date_cmp() { echo "$(($(date -d "$1" +%s) - $(date -d "$2" +%s)))"; }
+tmpfd() {
+    local -a fds=($(ls /dev/fd)) &>/dev/null
+    echo "$((${fds[$((${#fds[@]}-1))]:-99} + 1))"
+}
 pargs() {
     ensure "[[ $# -ge 3 ]]" "Need OPTIONS, ARGUMENTS and OPTSTRING"
     ensure "[[ -n $1 && -n $2 && -n $3 ]]" "Args should not be empty."
@@ -91,17 +95,14 @@ rclone_first_sync() {
 rclone_get_file_info() {
     local path="$1"
     local file="$2"
+    local tmpfd=$(tmpfd)
     if [[ -n $file ]]; then
-        exec 3>&1
-        exec 1>$file
-        # this will trigger bad file descriptor error
-        # trap 'exec 1>&3; exec 3>&-' RETURN
+        eval "exec $tmpfd>&1"
+        eval "exec 1>$file"
+        # trap once
+        trap "exec 1>&$tmpfd; exec $tmpfd>&-; trap '' RETURN" RETURN
     fi
     rclone lsf --format tp --csv --files-only -R "$path" | sort -t, -k2
-    if [[ -n $file ]]; then
-        exec 1>&3
-        exec 3>&-
-    fi
 }
 rclone_read_file_info() {
     local -n files="$1"
