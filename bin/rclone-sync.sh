@@ -338,11 +338,11 @@ EOF
     echo "old: ${!path2_path1_delta_old[*]}"
     echo ====================
 
-    echo "Sync $path1 to $path2..."
+    echo "### Sync $path1 to $path2..."
     rclone_sync_path path1 path2
-    echo "Sync $path2 to $path1..."
+    echo "### Sync $path2 to $path1..."
     rclone_sync_path path2 path1
-    echo "Sync status: total $((sync_ok+sync_fail)), ok $sync_ok, fail $sync_fail."
+    echo "### Sync status: total $((sync_ok+sync_fail)), ok $sync_ok, fail $sync_fail."
 
     # update info files
     if [[ $sync_ok -gt 0 ]]; then
