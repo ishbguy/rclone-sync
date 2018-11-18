@@ -167,19 +167,21 @@ rclone_sync() {
     local VERSION="v0.0.1"
     local HELP=$(cat <<EOF
 $PRONAME $VERSION
-$PRONAME [-dhv] path1 path2
+$PRONAME [-dhvD] path1 path2
     
     -d  dry run
     -h  print this help message 
     -v  print version number
+    -D  turn on debug mode
 
 This program is released under the terms of MIT License.
 EOF
 )
     local -A opts args
     local dry_run
-    pargs opts args 'dhv' "$@"
+    pargs opts args 'dhvD' "$@"
     shift $((OPTIND - 1))
+    [[ ${opts[D]} ]] && set -x
     [[ ${opts[h]} ]] && usage && return 0
     [[ ${opts[v]} ]] && version && return 0
     [[ ${opts[d]} ]] && dry_run=1 && echo "Dry run"
