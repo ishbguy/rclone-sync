@@ -153,6 +153,90 @@ rclone_sync_path() {
         rclone_do rclone deletefile "$p1/$file" && ((++sync_ok)) || ((++sync_fail))
     done
 }
+rclone_check_path() {
+    local prev="$1_files_prev"
+    local curr="$1_files_curr"
+    local inter="$1_inter"
+    local del="$1_delta_del"
+    local add="$1_delta_add"
+    local -n prev_ref="$prev"
+    local -n curr_ref="$curr"
+    local -n inter_ref="$inter"
+    local -n del_ref="$del"
+    local -n add_ref="$add"
+    local -n new_ref="$1_delta_new"
+    local -n old_ref="$1_delta_old"
+    local -n uch_ref="$1_delta_uch"
+
+    rclone_set_diff "$prev" "$curr" "$del"
+    rclone_set_diff "$curr" "$prev" "$add"
+    rclone_set_inter "$curr" "$prev" "$inter"
+    for file in "${!inter_ref[@]}"; do
+        local diff="$(date_cmp "${curr_ref[$file]}" "${prev_ref[$file]}")"
+        if [[ $diff -gt 0 ]]; then
+            new_ref[$file]=1
+        elif [[ $diff -lt 0 ]]; then
+            old_ref[$file]=1
+        else
+            uch_ref[$file]=1
+        fi
+    done
+}
+rclone_check_path_diff() {
+    local -n p1p2_diff="$1_$2_diff"
+    local -n p1p2_add="$1_$2_delta_add"
+    local -n p1p2_del="$1_$2_delta_del"
+    local -n p1_new="$1_delta_new"
+    local -n p2_del="$2_delta_del"
+    for file in "${!p1p2_diff[@]}"; do
+        if [[ -z ${p2_del[$file]} ]]; then
+            p1p2_add[$file]=1
+        elif [[ ${p1_new[$file]} ]]; then
+            p1p2_add[$file]=1
+        else
+            p1p2_del[$file]=1
+        fi
+    done
+
+}
+rclone_check_path_inter() {
+    local -n p1="$1_files_curr"
+    local -n p2="$2_files_curr"
+    local -n p1p2_inter="$1_$2_inter"
+    local -n p1p2_new="$1_$2_delta_new"
+    local -n p1p2_old="$1_$2_delta_old"
+    local -n p1p2_uch="$1_$2_delta_uch"
+    local -n p2p1_new="$2_$1_delta_new"
+    local -n p2p1_old="$2_$1_delta_old"
+    local -n p2p1_uch="$2_$1_delta_uch"
+
+    for file in "${!p1p2_inter[@]}"; do
+        local diff="$(date_cmp "${p1[$file]}" "${p2[$file]}")"
+        if [[ $diff -gt 0 ]]; then
+            p1p2_new[$file]=1
+            p2p1_old[$file]=1
+        elif [[ $diff -lt 0 ]]; then
+            p1p2_old[$file]=1
+            p2p1_new[$file]=1
+        else
+            p1p2_uch[$file]=1
+            p2p1_uch[$file]=1
+        fi
+    done
+}
+rclone_path_cmp() {
+    local p1="$1_files_curr"
+    local p2="$2_files_curr"
+    local p1p2_inter="$1_$2_inter"
+    local p1p2_diff="$1_$2_diff"
+    local p2p1_diff="$2_$1_diff"
+
+    rclone_set_inter "$p1" "$p2" "$p1p2_inter"
+    rclone_set_diff "$p1" "$p2" "$p1p2_diff"
+    rclone_set_diff "$p2" "$p1" "$p2p1_diff"
+    rclone_check_path_diff "$1" "$2"
+    rclone_check_path_inter "$1" "$2"
+}
 rclone_try() {
     local times=$1; shift
     for ((n = 0; n < times; n++)); do
@@ -234,73 +318,11 @@ EOF
         || die "Over $max_diff files different, please check by yourself!"
 
     # path curr and prev cmp
-    rclone_set_diff path1_files_prev path1_files_curr path1_delta_del
-    rclone_set_diff path1_files_curr path1_files_prev path1_delta_add
-    rclone_set_inter path1_files_curr path1_files_prev path1_inter
-    for file in "${!path1_inter[@]}"; do
-        local diff="$(date_cmp \
-            "${path1_files_curr[$file]}" "${path1_files_prev[$file]}")"
-        if [[ $diff -gt 0 ]]; then
-            path1_delta_new[$file]=1
-        elif [[ $diff -lt 0 ]]; then
-            path1_delta_old[$file]=1
-        else
-            path1_delta_uch[$file]=1
-        fi
-    done
-
-    # path2 curr and prev cmp
-    rclone_set_diff path2_files_prev path2_files_curr path2_delta_del
-    rclone_set_diff path2_files_curr path2_files_prev path2_delta_add
-    rclone_set_inter path2_files_curr path2_files_prev path2_inter
-    for file in "${!path2_inter[@]}"; do
-        local diff="$(date_cmp \
-            "${path2_files_curr[$file]}" "${path2_files_prev[$file]}")"
-        if [[ $diff -gt 0 ]]; then
-            path2_delta_new[$file]=1
-        elif [[ $diff -lt 0 ]]; then
-            path2_delta_old[$file]=1
-        else
-            path2_delta_uch[$file]=1
-        fi
-    done
+    rclone_check_path path1
+    rclone_check_path path2
 
     # path1 and path2 curr cmp
-    rclone_set_inter path1_files_curr path2_files_curr path1_path2_inter
-    rclone_set_diff path1_files_curr path2_files_curr path1_path2_diff
-    rclone_set_diff path2_files_curr path1_files_curr path2_path1_diff
-    for file in "${!path1_path2_diff[@]}"; do
-        if [[ -z ${path2_delta_del[$file]} ]]; then
-            path1_path2_delta_add[$file]=1
-        elif [[ ${path1_delta_new[$file]} ]]; then
-            path1_path2_delta_add[$file]=1
-        else
-            path1_path2_delta_del[$file]=1
-        fi
-    done
-    for file in "${!path2_path1_diff[@]}"; do
-        if [[ -z ${path1_delta_del[$file]} ]]; then
-            path2_path1_delta_add[$file]=1
-        elif [[ ${path2_delta_new[$file]} ]]; then
-            path2_path1_delta_add[$file]=1
-        else
-            path2_path1_delta_del[$file]=1
-        fi
-    done
-    for file in "${!path1_path2_inter[@]}"; do
-        local diff="$(date_cmp \
-            "${path1_files_curr[$file]}" "${path2_files_curr[$file]}")"
-        if [[ $diff -gt 0 ]]; then
-            path1_path2_delta_new[$file]=1
-            path2_path1_delta_old[$file]=1
-        elif [[ $diff -lt 0 ]]; then
-            path1_path2_delta_old[$file]=1
-            path2_path1_delta_new[$file]=1
-        else
-            path1_path2_delta_uch[$file]=1
-            path2_path1_delta_uch[$file]=1
-        fi
-    done
+    rclone_path_cmp path1 path2
 
     echo ====================
     echo "DELTA in $path1"
