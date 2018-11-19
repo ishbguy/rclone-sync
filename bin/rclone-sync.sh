@@ -253,7 +253,7 @@ rclone_show_delta() {
 rclone_try() {
     local times=$1; shift
     for ((n = 0; n < times; n++)); do
-        echo "Try $n time: $*"
+        echo "Try $((n+1)) time: $*"
         "$@" && { echo "Succeed."; return 0; } || echo "Failed!"
     done
     return 1
