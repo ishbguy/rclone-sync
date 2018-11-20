@@ -49,6 +49,35 @@ pargs() {
     done
     shift $((OPTIND - 1))
 }
+trap_push() {
+    ensure "[[ $# -ge 2 ]]" "Usage: trap_push 'cmds' SIGSPEC..."
+    local cmds="$1"; shift
+    for sig in "$@"; do
+        defined "trap_$sig" || declare -ga "trap_$sig"
+        local -n ts="trap_$sig"
+        ts+=("$cmds")
+        if [[ $sig == RETURN ]]; then
+            trap "trap '$cmds; trap_pop RETURN' RETURN" RETURN 
+        else
+            trap "$cmds" "$sig"
+        fi
+    done
+}
+trap_pop() {
+    ensure "[[ $# -ge 1 ]]" "Usage: trap_pop SIGSPEC..."
+    for sig in "$@"; do
+        defined "trap_$sig" || declare -ga "trap_$sig"
+        local -n ts="trap_$sig"
+        # pop cmds
+        ts=("${ts[@]:0:$((${#ts[@]}-1))}")
+        local cmds="${ts[$((${#ts[@]}-1))]}"
+        if [[ $sig == RETURN ]]; then
+            trap "trap '$cmds' RETURN" RETURN
+        else
+            trap "$cmds" "$sig"
+        fi
+    done
+}
 require() {
     ensure "[[ $# -gt 2 ]]" "Not enough args."
     ensure "definedf $1" "$1 should be a defined func."
@@ -99,8 +128,7 @@ rclone_get_file_info() {
     if [[ -n $file ]]; then
         eval "exec $tmpfd>&1"
         eval "exec 1>$file"
-        # trap once
-        trap "exec 1>&$tmpfd; exec $tmpfd>&-; trap '' RETURN" RETURN
+        trap_push "exec 1>&$tmpfd; exec $tmpfd>&-" RETURN
     fi
     rclone lsf --format tp --csv --files-only -R "$path" | sort -t, -k2
 }
@@ -318,7 +346,7 @@ EOF
 
     local path1_info_curr=$(mktemp)
     local path2_info_curr=$(mktemp)
-    trap 'rm -rf $path1_info_curr $path2_info_curr' SIGINT EXIT RETURN
+    trap_push 'rm -rf $path1_info_curr $path2_info_curr' SIGINT EXIT RETURN
     rclone_try "$try_time" rclone_get_file_info "$path1" "$path1_info_curr" || die "Can not get info files."
     rclone_try "$try_time" rclone_get_file_info "$path2" "$path2_info_curr" || die "Can not get info files."
 
