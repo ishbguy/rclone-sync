@@ -27,10 +27,7 @@ ensure() {
         "${FUNCNAME[0]} '$cmd' failed." "$@"
 }
 date_cmp() { echo "$(($(date -d "$1" +%s) - $(date -d "$2" +%s)))"; }
-tmpfd() {
-    local -a fds=($(ls /dev/fd)) &>/dev/null
-    echo "$((${fds[$((${#fds[@]}-1))]:-99} + 1))"
-}
+tmpfd() { basename <(:); }
 pargs() {
     ensure "[[ $# -ge 3 ]]" "Need OPTIONS, ARGUMENTS and OPTSTRING"
     ensure "[[ -n $1 && -n $2 && -n $3 ]]" "Args should not be empty."
