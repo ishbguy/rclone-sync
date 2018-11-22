@@ -65,9 +65,9 @@ trap_pop() {
     for sig in "$@"; do
         defined "trap_$sig" || declare -ga "trap_$sig"
         local -n ts="trap_$sig"
-        # pop cmds
+        local cmds
         ts=("${ts[@]:0:$((${#ts[@]}-1))}")
-        local cmds="${ts[$((${#ts[@]}-1))]}"
+        [[ ${#ts[@]} -gt 0 ]] && cmds="${ts[-1]}"
         if [[ $sig == RETURN ]]; then
             trap "trap '$cmds' RETURN" RETURN
         else
