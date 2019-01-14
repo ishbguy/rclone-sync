@@ -264,6 +264,7 @@ rclone_path_cmp() {
     rclone_set_diff "$p1" "$p2" "$p1p2_diff"
     rclone_set_diff "$p2" "$p1" "$p2p1_diff"
     rclone_path_cmp_diff "$1" "$2"
+    rclone_path_cmp_diff "$2" "$1"
     rclone_path_cmp_inter "$1" "$2"
 }
 rclone_show_delta() {
