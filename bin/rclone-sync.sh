@@ -300,7 +300,7 @@ $PRONAME [-dhvD] path1 path2
 This program is released under the terms of MIT License.
 EOF
 )
-    local -A opts args
+    local -A opts=() args=()
     local dry_run
     pargs opts args 'dhvD' "$@"
     shift $((OPTIND - 1))
