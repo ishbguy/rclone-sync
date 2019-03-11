@@ -5,7 +5,7 @@
 # source guard
 [[ $RCLONE_SYNC_SOURCED -eq 1 ]] && return
 declare -r RCLONE_SYNC_SOURCED=1
-declare -r RCLONE_SYNC_ABS_SRC="$(realpath "${BASH_SOURCE[0]}")"
+declare -r RCLONE_SYNC_ABS_SRC="$(readlink -f "${BASH_SOURCE[0]}")"
 declare -r RCLONE_SYNC_ABS_DIR="$(dirname "$RCLONE_SYNC_ABS_SRC")"
 
 # utilities

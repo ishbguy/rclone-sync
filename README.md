@@ -8,7 +8,7 @@
 A bidirectional sync tool using rclone and implemented in shell. The sync
 algorithms reference from
 [cjnaz/rclonesync-V2](https://github.com/cjnaz/rclonesync-V2). which is a good
-choice for a Python version.
+choice in Python.
 
 ## Table of Contents
 
@@ -23,13 +23,12 @@ choice for a Python version.
 
 ## :art: Features
 
-+ What an amazing thing!
++ bidirectional sync
 
 ## :straight_ruler: Prerequisite
 
 > + `bash`
 > + `rclone`
-> + `realpath`
 
 ## :rocket: Installation
 
