@@ -172,10 +172,10 @@ rclone_sync_path() {
     local -n del="${1}_${2}_delta_del"
 
     for file in "${!add[@]}" "${!new[@]}"; do
-        rclone_do rclone copyto "$p1/$file" "$p2/$file" && ((++sync_ok)) || ((++sync_fail))
+        rclone_do rclone copyto "$p1/${file//\"}" "$p2/${file//\"}" && ((++sync_ok)) || ((++sync_fail))
     done
     for file in "${!del[@]}"; do
-        rclone_do rclone deletefile "$p1/$file" && ((++sync_ok)) || ((++sync_fail))
+        rclone_do rclone deletefile "$p1/${file//\"}" && ((++sync_ok)) || ((++sync_fail))
     done
 }
 rclone_check_path_inter() {
